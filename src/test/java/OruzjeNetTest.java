@@ -15,7 +15,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,9 +51,10 @@ public class OruzjeNetTest {
 
     // svvtTest, svvttest123
     // emirprasovic, dobrasifra
+    // testSvvt, svvttest123
 
     // TEST SCENARIO: LOGIN
-    public void login(String usernameVal, String passwordVal) throws InterruptedException {
+    public void login(String usernameVal, String passwordVal) {
         webDriver.get(baseUrl);
 
         WebElement loginButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/section[1]/div/div/div[2]/a[3]")));
@@ -68,13 +68,11 @@ public class OruzjeNetTest {
 
         WebElement login = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div/div[2]/form/div/button")));
         login.click();
-
-        Thread.sleep(2000);
     }
 
     @Test
     public void testValidUnverifiedUserLogin() throws InterruptedException {
-        login("svvtTest", "svvttest123");
+        login("testSvvt", "svvttest123");
     }
 
     @Test
@@ -85,10 +83,12 @@ public class OruzjeNetTest {
     @Test
     public void testInvalidLogin() throws InterruptedException {
         login("InvalidUsername", "invalidpwd");
+
+        assertEquals("https://oruzje.net/prijava", webDriver.getCurrentUrl());
     }
 
     // TEST SCENARIO: REGISTRATION
-    @Test
+    @Test // Dodati u dokumentaciji da ima captcha
     public void testRegistration() throws InterruptedException {
         webDriver.get(baseUrl);
 //        WebElement registrationButton = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[@href='https://oruzje.net/registracija']")));
@@ -134,6 +134,7 @@ public class OruzjeNetTest {
         // privacyCheckbox.click();
         privacyInputLabel.click();
 
+        Thread.sleep(7000); // For captcha?
         WebElement createAccountButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[1]/div/div/div/div/form/div[2]/button")));
         createAccountButton.click();
 
@@ -141,7 +142,7 @@ public class OruzjeNetTest {
     }
 
     // TEST SCENARIO: SEARCH
-    @ParameterizedTest
+    @ParameterizedTest // Dodati test da searcha za npr "mlijeko" i provjerit da ne izbacuje nista
     @CsvSource({"Colt Python, python", "Glock 19, glock", "Sig Sauer, sig"})
     public void testSearch(String searchTermInput, String expectedPartialResult) throws InterruptedException {
         webDriver.get(baseUrl);
@@ -158,6 +159,23 @@ public class OruzjeNetTest {
         assertTrue(productTitle.toLowerCase().contains(expectedPartialResult), "Search results should contain the search term");
 
         Thread.sleep(3000);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"Mlijecni proizvodi", "Jabuka", "Kaladont"})
+    public void testSearchWithNoResults(String searchTermInput) throws InterruptedException {
+        webDriver.get(baseUrl);
+
+        // WebElement searchInput = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.name("pretraga")));
+        WebElement searchInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/section[1]/div/div/form/div/input")));
+        searchInput.sendKeys(searchTermInput);
+        searchInput.sendKeys(Keys.ENTER);
+
+        WebElement noResultsFoundParagraph = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/p")));
+        String noResultsFoundText = noResultsFoundParagraph.getText();
+
+        assertEquals("Za traženu pretragu nema rezultata.", noResultsFoundText);
+
     }
 
     // TEST SCENARIO: FILTER RESULTS
@@ -247,15 +265,25 @@ public class OruzjeNetTest {
         filterButton.click();
 
         // List<WebElement> countryIconSvgs = webDriverWait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.xpath("//use[@href='https://oruzje.net/images/icons.svg#icon--hr']")));
-        List<WebElement> countryIconSvgs = webDriver.findElements(By.xpath("//use[@*[name()='xlink:href' and .='https://oruzje.net/images/icons.svg#icon--hr']]"));
+        // List<WebElement> countryIconSvgs = webDriver.findElements(By.xpath("//use[@*[name()='xlink:href' and .='https://oruzje.net/images/icons.svg#icon--hr']]"));
+        // List<WebElement> contryIconList = webDriver.findElements(By.xpath("//use[@xlink:href='https://oruzje.net/images/icons.svg#icon--hr']"));
+        // List<WebElement> countryIconSvgs = webDriver.findElements(By.xpath("//use[@*[name()='xlink:href' and .='https://oruzje.net/images/icons.svg#icon--hr']]"));
+        // List<WebElement> countryIconSvgs = webDriver.findElements(By.xpath("//use[@*[local-name()='href' and .='https://oruzje.net/images/icons.svg#icon--hr']]"));
+        Thread.sleep(3000);
+
+        List<WebElement> countryIconSvgs = (List<WebElement>) javascriptExecutor.executeScript(
+                "return document.querySelectorAll('use[xlink\\:href=\"https://oruzje.net/images/icons.svg#icon--hr\"]');"
+        );
+
 
 
         List<WebElement> articesList = webDriverWait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.xpath("//article[@class='product']")));
 
         System.out.println("Icon list size: " + countryIconSvgs.size());
         System.out.println("Article list size: " + articesList.size());
+        // System.out.println("Country list size: " + contryIconList.size());
 
-        Thread.sleep(3000);
+        Thread.sleep(1000);
     }
 
     // TEST SCENARIO: ORDER RESULTS
@@ -327,6 +355,67 @@ public class OruzjeNetTest {
         assertEquals(sortedPrices, prices, "Results should be sorted by price in ascending order");
     }
 
+    public static boolean isSortedDescending(List<Integer> list) {
+        for (int i = 0; i < list.size() - 1; i++) {
+            if (list.get(i) < list.get(i + 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    @Test
+    public void testOrderByViews() throws InterruptedException {
+        webDriver.get(baseUrl);
+
+        scrollToY(800);
+        Thread.sleep(1000);
+
+        Select orderSelect = new Select(webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("sortiraj_po"))));
+        orderSelect.selectByValue("najvise_pregleda");
+
+        WebElement filterButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[2]/div/div/div/div[1]/form/div/div[3]/div[2]/div[2]/button")));
+        filterButton.click();
+
+        List<WebElement> productLinks = webDriverWait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.className("product__link")));
+        List<Integer> views = new ArrayList<>();
+//        for (int i = 0; i < productLinks.size(); i++) {
+//            productLinks = webDriverWait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.className("product__link")));
+//
+//            // Click the current product link
+//            WebElement product = productLinks.get(i);
+//            System.out.println(product.getAttribute("href"));
+//            product.click();
+//
+//            // Extract the view count on the product detail page
+//            WebElement viewCountParagraph = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/div/div[2]/div[3]/div[2]/p[2]")));
+//            String viewCountText = viewCountParagraph.getText();
+//            viewCountText = viewCountText.substring(15); // Adjust substring to match your format
+//            int viewCount = Integer.parseInt(viewCountText);
+//            System.out.println("View Count: " + viewCount);
+//
+//            // Navigate back to the product listing page
+//            webDriver.navigate().back();
+//        }
+        for (WebElement el : productLinks) {
+            System.out.println(el.getAttribute("href"));
+            webDriver.get(el.getAttribute("href"));
+
+            // el.click();
+            WebElement viewCountParagraph = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/div/div[2]/div[3]/div[2]/p[2]")));
+            String viewCountText = viewCountParagraph.getText();
+            viewCountText = viewCountText.substring(15);
+            int viewCount = Integer.parseInt(viewCountText);
+
+            System.out.println(viewCount);
+
+            // Thread.sleep(1000);
+            views.add(viewCount);
+            webDriver.navigate().back();
+        }
+
+        assertTrue(isSortedDescending(views), "Views should be sorted from most viewed to least");
+    }
+
     // TEST SCENARIO: SAVE PRODUCT
     @Test
     public void testSaveProduct() throws InterruptedException {
@@ -357,35 +446,30 @@ public class OruzjeNetTest {
         Thread.sleep(3000);
     }
 
-    // TEST SCENARIO: NAVIGATE LINKS
     @Test
-    public void _testNavigationLinks() throws InterruptedException {
+    public void testSaveProductAsGuest() throws InterruptedException {
         webDriver.get(baseUrl);
 
-        JavascriptExecutor jsExecutor = (JavascriptExecutor) webDriver;
-        jsExecutor.executeScript("window.scrollTo(0, document.body.scrollHeight);");
-        Thread.sleep(3000);
+        scrollToY(1100);
+        Thread.sleep(1000);
 
-        List<WebElement> navLinks = webDriver.findElements(By.xpath("//a[@class='menu__item']")); // Adjust XPath for your navigation links
+        WebElement firstProduct = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[2]/div/div/div/div[2]/article[1]/a")));
+        firstProduct.click();
 
-        for (WebElement link : navLinks) {
-            String linkText = link.getText();
-            String linkHref = link.getAttribute("href");
+        WebElement productTitleElement = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/div[1]/div[2]/div[3]/div[1]/h1")));
+        String productTitle = productTitleElement.getText();
 
-            if (!linkHref.equals("mailto:info@oruzje.net") && !linkHref.equals("/")) {
-                link.click();
+        WebElement saveButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[1]/div[1]/a")));
+        saveButton.click();
 
-                assertTrue(webDriver.getCurrentUrl().contains(linkHref), "URL is not good for link: " + linkText);
+        WebElement toastDiv = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div[2]/div/div/div[1]/div[1]/p")));
+        String toastMessage = toastDiv.getText();
 
-                String pageTitle = webDriver.getTitle();
-                System.out.println("Current page: " + pageTitle);
-
-                webDriver.navigate().back();
-            }
-        }
+        assertEquals("Da biste sačuvali oglas morate biti prijavljeni", toastMessage, "Guest user should not be able to save the product");
     }
 
-    @ParameterizedTest
+    // TEST SCENARIO: NAVIGATE LINKS
+    @ParameterizedTest // Mozda dodati navigaciju za nepostojeci link i provjerit dal je 404
     @CsvSource({"https://oruzje.net/lovacko-oruzje", "https://oruzje.net/polovno-oruzje", "https://oruzje.net/zastava-oruzje", "https://oruzje.net/o-nama"})
     public void testNavigationLinks(String link) throws InterruptedException {
         webDriver.get(baseUrl);
@@ -399,6 +483,18 @@ public class OruzjeNetTest {
 
         String url = webDriver.getCurrentUrl();
         assertEquals(link, url);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"https://oruzje.net/not-good", "https://oruzje.net/does-not-exist"})
+    public void testUnexistingNavigationLinks(String link) throws InterruptedException {
+        webDriver.get(link);
+
+        // Compound class not permitted
+        // WebElement errorContainer = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.className("page-404__title color-primary mb-0")));
+        WebElement errorContainer = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//h1[@class='page-404__title color-primary mb-0']")));
+
+        assertEquals("404", errorContainer.getText());
     }
 
     // TEST SCENARIO: ADD PRODUCT
@@ -464,6 +560,32 @@ public class OruzjeNetTest {
         Thread.sleep(3000);
     }
 
+    @Test
+    public void testAddEmptyProduct() throws InterruptedException {
+        testValidVerifiedUserLogin();
+
+        // WebElement addProductButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='https://oruzje.net/novi-oglas/osnovne-informacije']")));
+        WebElement addProductButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/a")));
+        addProductButton.click();
+
+
+        scrollToY(800);
+        Thread.sleep(1000);
+
+        WebElement buttonNext = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[2]/form/div/div/div[2]/div/button")));
+        buttonNext.click();
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        List<WebElement> warningMessages = webDriverWait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.className("c-form__message")));
+
+        assertEquals(6, warningMessages.size());
+        for (WebElement message : warningMessages) {
+            assertEquals("Polje mora da bude uneseno", message.getText(), "Warning message must be displayed");
+        }
+    }
+
     // TEST SCENARIO: UPDATE PRODUCT
     @Test
     public void testUpdateProductTitle() throws InterruptedException {
@@ -487,6 +609,100 @@ public class OruzjeNetTest {
         WebElement titleInput = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.name("title")));
         titleInput.clear();
         titleInput.sendKeys("Test Product Auto Update");
+
+        scrollToY(1200);
+        Thread.sleep(1000);
+
+        WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[2]/form/div/div/div[2]/div/button")));
+        saveChangesButton.click();
+
+        Thread.sleep(3000);
+    }
+
+    @Test
+    public void testUpdateProductPrice() throws InterruptedException {
+        testValidVerifiedUserLogin();
+
+        webDriver.get("https://oruzje.net/profil/oglasi");
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        WebElement expandOptionsButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='product__edit']")));
+        expandOptionsButton.click();
+
+        // Cannot use href selector since it is dependent on the product name
+        WebElement editProductButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[2]/article/div[3]/ul/li[1]/a")));
+        editProductButton.click();
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        WebElement priceInput = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.name("price")));
+        priceInput.clear();
+        priceInput.sendKeys("999");
+
+        scrollToY(1200);
+        Thread.sleep(1000);
+
+        WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[2]/form/div/div/div[2]/div/button")));
+        saveChangesButton.click();
+
+        Thread.sleep(3000);
+    }
+
+    @Test // Fails
+    public void testUpdateProductCategory() throws InterruptedException {
+        testValidVerifiedUserLogin();
+
+        webDriver.get("https://oruzje.net/profil/oglasi");
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        WebElement expandOptionsButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='product__edit']")));
+        expandOptionsButton.click();
+
+        // Cannot use href selector since it is dependent on the product name
+        WebElement editProductButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[2]/article/div[3]/ul/li[1]/a")));
+        editProductButton.click();
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        Select categorySelect = new Select(webDriverWait.until(ExpectedConditions.elementToBeClickable(By.id("category"))));
+        categorySelect.selectByValue("3");
+
+        scrollToY(1200);
+        Thread.sleep(1000);
+
+        WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[2]/form/div/div/div[2]/div/button")));
+        saveChangesButton.click();
+
+        Thread.sleep(3000);
+    }
+
+    @Test
+    public void testUpdateProductState() throws InterruptedException {
+        testValidVerifiedUserLogin();
+
+        webDriver.get("https://oruzje.net/profil/oglasi");
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        WebElement expandOptionsButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='product__edit']")));
+        expandOptionsButton.click();
+
+        // Cannot use href selector since it is dependent on the product name
+        WebElement editProductButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[2]/article/div[3]/ul/li[1]/a")));
+        editProductButton.click();
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        WebElement usedStateLabel = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//label[@for='radio-2']")));
+        usedStateLabel.click();
 
         scrollToY(1200);
         Thread.sleep(1000);
@@ -564,7 +780,7 @@ public class OruzjeNetTest {
         testValidUnverifiedUserLogin();
 
         // This is the product that we added with the above test
-        webDriver.get("https://oruzje.net/oglas/test-product-3");
+        webDriver.get("https://oruzje.net/oglas/test-product-6");
 
         scrollToY(600);
         Thread.sleep(1000);
@@ -581,12 +797,37 @@ public class OruzjeNetTest {
         Thread.sleep(3000);
     }
 
+    @Test
+    public void testSendEmptyMessage() throws InterruptedException {
+        testValidUnverifiedUserLogin();
+
+        // This is the product that we added with the above test
+        webDriver.get("https://oruzje.net/oglas/test-product-6");
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        WebElement sendMessageButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[1]/div[2]/div[5]/div[2]/div[2]/a")));
+        sendMessageButton.click();
+
+        WebElement textAreaInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("message")));
+        textAreaInput.sendKeys("");
+
+        WebElement sendButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div/div/div/div[2]/div[2]/div/form/div/button")));
+        sendButton.click();
+
+        WebElement warningMessageDiv = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/div/div/div/div[2]/div[2]/div/form/span")));
+        String warningMessage = warningMessageDiv.getText();
+
+        assertEquals("Polje mora da bude uneseno", warningMessage);
+    }
+
     // TEST SCENARIO: POST QUESTION
     @Test
     public void testPostQuestion() throws InterruptedException {
         testValidUnverifiedUserLogin();
 
-        webDriver.get("https://oruzje.net/oglas/test-product-3");
+        webDriver.get("https://oruzje.net/oglas/test-product-6");
 
         scrollToY(1800);
         Thread.sleep(1000);
@@ -602,9 +843,50 @@ public class OruzjeNetTest {
         Thread.sleep(3000);
     }
 
+    @Test
+    public void testPostQuestionAsGuest() throws InterruptedException {
+        webDriver.get("https://oruzje.net/oglas/test-product-6");
+
+        scrollToY(1800);
+        Thread.sleep(1000);
+
+        String text = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/section/p"))).getText();
+        WebElement buttonLink = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/section/p/a")));
+        String link = buttonLink.getAttribute("href");
+
+        assertEquals("Morate biti prijavljeni da biste postavili javno pitanje! Prijavi se", text);
+        assertEquals("https://oruzje.net/prijava", link);
+    }
+
+    @Test
+    public void testPostEmptyQuestion() throws InterruptedException {
+        testValidUnverifiedUserLogin();
+
+        webDriver.get("https://oruzje.net/oglas/test-product-6");
+
+        scrollToY(1800);
+        Thread.sleep(1000);
+
+        WebElement textAreaInput = webDriver.findElement(By.xpath("/html/body/div[1]/div/div/div/section/div/form/textarea"));
+        // textAreaInput.sendKeys("");
+
+        javascriptExecutor.executeScript("arguments[0].removeAttribute('required');", textAreaInput);
+
+        WebElement postQuestionButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[1]/div/div/div/section/div/form/button")));
+        postQuestionButton.click();
+
+        scrollToY(1800);
+        Thread.sleep(1000);
+
+        WebElement warningMessageDiv = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/section/div/form/span")));
+        String warningMessage = warningMessageDiv.getText();
+
+        assertEquals("Polje mora da bude uneseno", warningMessage);
+    }
+
     // TEST SCENARIO: EDIT PROFILE
     @Test
-    public void testEditProfile() throws InterruptedException {
+    public void testEditProfileName() throws InterruptedException {
         testValidUnverifiedUserLogin();
 
         WebElement profileIcon = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='header__user has-message']")));
@@ -617,19 +899,83 @@ public class OruzjeNetTest {
         Thread.sleep(1000);
 
         WebElement nameInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("name")));
-        WebElement yearInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("year")));
 
         // We need to clear default values so our new values don't just get appended
         nameInput.clear();
-        yearInput.clear();
 
         nameInput.sendKeys("Svvt Test Updated");
+
+        WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@class='c-form__button button button--primary unset-width']")));
+        saveChangesButton.click();
+
+        WebElement profileTitle = webDriver.findElement(By.xpath("/html/body/div/div/div/div/div[1]/div/div[1]/div[2]/div/h3"));
+        String profileName = profileTitle.getText();
+
+        assertEquals("Svvt Test Updated", profileName);
+    }
+
+    @Test
+    public void testEditProfileYearOfBirth() throws InterruptedException {
+        testValidUnverifiedUserLogin();
+
+        WebElement profileIcon = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='header__user has-message']")));
+        profileIcon.click();
+
+        WebElement editProfileLink = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='https://oruzje.net/profil/informacije']")));
+        editProfileLink.click();
+
+        scrollToY(800);
+        Thread.sleep(1000);
+
+        WebElement yearInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("year")));
+
+        // We need to clear default values so our new values don't just get appended
+        yearInput.clear();
+
         yearInput.sendKeys("1999");
 
         WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@class='c-form__button button button--primary unset-width']")));
         saveChangesButton.click();
 
         Thread.sleep(3000);
+    }
+
+    @Test
+    public void testEditProfileLocation() throws InterruptedException {
+        testValidUnverifiedUserLogin();
+
+        WebElement profileIcon = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='header__user has-message']")));
+        profileIcon.click();
+
+        WebElement editProfileLink = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='https://oruzje.net/profil/informacije']")));
+        editProfileLink.click();
+
+        scrollToY(800);
+        Thread.sleep(1000);
+
+        Select countrySelect = new Select(webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("country_id"))));
+        Select citySelect = new Select(webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("city_id"))));
+
+        countrySelect.selectByValue("4");
+
+        Thread.sleep(1000); // Wait for the options to load
+        citySelect.selectByValue("697"); // Crikvenica
+
+
+        WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@class='c-form__button button button--primary unset-width']")));
+        saveChangesButton.click();
+
+        WebElement countryText = webDriver.findElement(By.xpath("/html/body/div/div/div/div/div[1]/div/div[1]/div[2]/ul/li[2]/div"));
+        WebElement cityText = webDriver.findElement(By.xpath("/html/body/div/div/div/div/div[1]/div/div[1]/div[2]/ul/li[3]/div"));
+
+        String country = countryText.getText();
+        String city = cityText.getText();
+
+        country = country.trim();
+        city = city.trim();
+
+        assertEquals("Hrvatska", country);
+        assertEquals("Crikvenica", city);
     }
 
     // TEST SCENARIO: CHANGE PASSWORD
@@ -646,13 +992,63 @@ public class OruzjeNetTest {
         WebElement newPasswordInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
         WebElement confirmPasswordInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password_confirmation")));
 
-        newPasswordInput.sendKeys("newpassword123");
+        newPasswordInput.sendKeys("newpassword1234");
         confirmPasswordInput.sendKeys("newpassword1234");
 
         WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div/form/div/div/div/button")));
         saveChangesButton.click();
 
         Thread.sleep(3000);
+    }
+
+    @Test
+    public void testChangePasswordTooShort() throws InterruptedException {
+        testValidUnverifiedUserLogin();
+
+        WebElement profileIcon = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='header__user has-message']")));
+        profileIcon.click();
+
+        WebElement editProfileLink = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='https://oruzje.net/profil/promjeni-sifru']")));
+        editProfileLink.click();
+
+        WebElement newPasswordInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
+        WebElement confirmPasswordInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password_confirmation")));
+
+        newPasswordInput.sendKeys("pass");
+        confirmPasswordInput.sendKeys("pass");
+
+        WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div/form/div/div/div/button")));
+        saveChangesButton.click();
+
+        WebElement warningMessageDiv = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/div/form/div/div/div/div[1]/span")));
+        String warningMessage = warningMessageDiv.getText();
+
+        assertEquals("Unesena vrijednost mora imati najmanje 8 karaktera", warningMessage);
+    }
+
+    @Test
+    public void testChangePasswordIncorrectly() throws InterruptedException {
+        testValidUnverifiedUserLogin();
+
+        WebElement profileIcon = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@class='header__user has-message']")));
+        profileIcon.click();
+
+        WebElement editProfileLink = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='https://oruzje.net/profil/promjeni-sifru']")));
+        editProfileLink.click();
+
+        WebElement newPasswordInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
+        WebElement confirmPasswordInput = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password_confirmation")));
+
+        newPasswordInput.sendKeys("password12343210");
+        confirmPasswordInput.sendKeys("notconfirmedcorrectly");
+
+        WebElement saveChangesButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div/form/div/div/div/button")));
+        saveChangesButton.click();
+
+        WebElement warningMessageDiv = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/div/form/div/div/div/div[1]/span")));
+        String warningMessage = warningMessageDiv.getText();
+
+        assertEquals("Unesena vrijednost se ne podudara", warningMessage);
     }
 
     // SCENARIO: SECURITY
@@ -663,8 +1059,6 @@ public class OruzjeNetTest {
         assertTrue(currentUrl.startsWith("https"), "Website should be using HTTPS");
     }
 
-    // TEST SCENARIO: PRODUCT DETAILS
-
     @ParameterizedTest
     @CsvSource({"profil/oglasi", "profil/zavrseni-oglasi", "profil/spaseni-oglasi", "novi-oglas/osnovne-informacije", "poruke", "profil/informacije"})
     public void testProtectedRoutes(String protectedRoute) {
@@ -673,4 +1067,6 @@ public class OruzjeNetTest {
         String currentUrl = webDriver.getCurrentUrl();
         assertEquals("https://oruzje.net/prijava", currentUrl, "Guest should be redirected to the login page");
     }
+
+    // TEST SCENARIO: PRODUCT DETAILS
 }
