@@ -469,7 +469,7 @@ public class OruzjeNetTest {
     }
 
     // TEST SCENARIO: NAVIGATE LINKS
-    @ParameterizedTest // Mozda dodati navigaciju za nepostojeci link i provjerit dal je 404
+    @ParameterizedTest
     @CsvSource({"https://oruzje.net/lovacko-oruzje", "https://oruzje.net/polovno-oruzje", "https://oruzje.net/zastava-oruzje", "https://oruzje.net/o-nama"})
     public void testNavigationLinks(String link) throws InterruptedException {
         webDriver.get(baseUrl);
@@ -550,7 +550,7 @@ public class OruzjeNetTest {
 
         // Cannot use webDriverWait for image input since it is hidden
         WebElement imageInput = webDriver.findElement(By.xpath("/html/body/input"));
-        imageInput.sendKeys("C:\\Users\\User\\OneDrive\\Slike\\Snimke zaslona\\testImage.png");
+        imageInput.sendKeys("C:\\Users\\User\\IdeaProjects\\SVVTProject2024\\src\\main\\resources\\test-product.jpg");
         // Wait for image to post
         Thread.sleep(4000);
 
