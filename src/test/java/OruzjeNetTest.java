@@ -88,10 +88,10 @@ public class OruzjeNetTest {
     }
 
     // TEST SCENARIO: REGISTRATION
-    @Test // Dodati u dokumentaciji da ima captcha
+    @Test // Requires captcha
     public void testRegistration() throws InterruptedException {
         webDriver.get(baseUrl);
-//        WebElement registrationButton = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[@href='https://oruzje.net/registracija']")));
+        // WebElement registrationButton = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[@href='https://oruzje.net/registracija']")));
         WebElement registrationButton = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/section[1]/div/div/div[2]/a[1]")));
         registrationButton.click();
 
@@ -126,6 +126,109 @@ public class OruzjeNetTest {
         passwordInput.sendKeys("svvt1234");
         confirmPasswordInput.sendKeys("svvt1234");
         phoneNumberInput.sendKeys("38761111111");
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        citySelect.selectByValue("28");
+        // privacyCheckbox.click();
+        privacyInputLabel.click();
+
+        Thread.sleep(7000); // For captcha?
+        WebElement createAccountButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[1]/div/div/div/div/form/div[2]/button")));
+        createAccountButton.click();
+
+        Thread.sleep(3000);
+    }
+
+    @Test // Requires captcha
+    public void testInvalidRegistration() throws InterruptedException {
+        webDriver.get(baseUrl);
+        WebElement registrationButton = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/section[1]/div/div/div[2]/a[1]")));
+        registrationButton.click();
+
+        scrollToY(200);
+        Thread.sleep(1000);
+
+        WebElement basicPacketButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='https://oruzje.net/registracija-osnovni-nalog?p=1']")));
+        basicPacketButton.click();
+
+        webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3)); // Might be unnecessary
+
+        WebElement nameInput = webDriver.findElement(By.name("name"));
+        WebElement dayInput = webDriver.findElement(By.name("day"));
+        WebElement monthInput = webDriver.findElement(By.name("month"));
+        WebElement yearInput = webDriver.findElement(By.name("year"));
+        WebElement usernameInput = webDriver.findElement(By.name("username"));
+        WebElement emailInput = webDriver.findElement(By.name("email"));
+        WebElement passwordInput = webDriver.findElement(By.name("password"));
+        WebElement confirmPasswordInput = webDriver.findElement(By.name("password_confirmation"));
+        WebElement phoneNumberInput = webDriver.findElement(By.name("phone_number"));
+        Select citySelect = new Select(webDriver.findElement(By.name("city_id")));
+        WebElement privacyInputLabel = webDriver.findElement(By.xpath("//label[@for='check']"));
+
+        nameInput.sendKeys("");
+        dayInput.sendKeys("1");
+        monthInput.sendKeys("1");
+        yearInput.sendKeys("3000");
+        usernameInput.sendKeys("");
+        emailInput.sendKeys("notAnEmail");
+        passwordInput.sendKeys("short");
+        confirmPasswordInput.sendKeys("short");
+        phoneNumberInput.sendKeys("123456789");
+
+        scrollToY(600);
+        Thread.sleep(1000);
+
+        citySelect.selectByValue("28");
+        // privacyCheckbox.click();
+        privacyInputLabel.click();
+
+        Thread.sleep(7000); // For captcha?
+        WebElement createAccountButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[1]/div/div/div/div/form/div[2]/button")));
+        createAccountButton.click();
+
+        Thread.sleep(3000);
+    }
+
+    @Test // Requires captcha
+    public void testRegistrationForAlreadyExistingEmail() throws InterruptedException {
+        webDriver.get(baseUrl);
+        // WebElement registrationButton = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[@href='https://oruzje.net/registracija']")));
+        WebElement registrationButton = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/section[1]/div/div/div[2]/a[1]")));
+        registrationButton.click();
+
+        scrollToY(200);
+        Thread.sleep(1000);
+
+        WebElement basicPacketButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='https://oruzje.net/registracija-osnovni-nalog?p=1']")));
+        basicPacketButton.click();
+
+        webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3)); // Might be unnecessary
+
+        WebElement nameInput = webDriver.findElement(By.name("name"));
+        WebElement dayInput = webDriver.findElement(By.name("day"));
+        WebElement monthInput = webDriver.findElement(By.name("month"));
+        WebElement yearInput = webDriver.findElement(By.name("year"));
+        WebElement usernameInput = webDriver.findElement(By.name("username"));
+        WebElement emailInput = webDriver.findElement(By.name("email"));
+        WebElement passwordInput = webDriver.findElement(By.name("password"));
+        WebElement confirmPasswordInput = webDriver.findElement(By.name("password_confirmation"));
+        WebElement phoneNumberInput = webDriver.findElement(By.name("phone_number"));
+        Select citySelect = new Select(webDriver.findElement(By.name("city_id")));
+        // WebElement privacyCheckbox = webDriver.findElement(By.name("privacy"));
+        // Selecting the checkbox doesn't work, so we select the label
+        WebElement privacyInputLabel = webDriver.findElement(By.xpath("//label[@for='check']"));
+
+        nameInput.sendKeys("Emir Prasovic");
+        dayInput.sendKeys("10");
+        monthInput.sendKeys("10");
+        yearInput.sendKeys("2000");
+        usernameInput.sendKeys("emirprasovic");
+        emailInput.sendKeys("eemaemir@gmail.com");
+        passwordInput.sendKeys("dobrasifra");
+        confirmPasswordInput.sendKeys("dobrasifra");
+        phoneNumberInput.sendKeys("123456789");
 
         scrollToY(600);
         Thread.sleep(1000);
