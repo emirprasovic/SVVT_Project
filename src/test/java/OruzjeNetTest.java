@@ -17,8 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class OruzjeNetTest {
     private static WebDriver webDriver;
@@ -53,6 +52,9 @@ public class OruzjeNetTest {
     // emirprasovic, dobrasifra
     // testSvvt, svvttest123
 
+    // svvtTesting, svvttest123
+    // verifiedUser, dobrasifra
+
     // TEST SCENARIO: LOGIN
     public void login(String usernameVal, String passwordVal) {
         webDriver.get(baseUrl);
@@ -72,16 +74,20 @@ public class OruzjeNetTest {
 
     @Test
     public void testValidUnverifiedUserLogin() throws InterruptedException {
-        login("testSvvt", "svvttest123");
+        login("svvtTesting", "svvttest123");
+
+        assertNotEquals("https://oruzje.net/prijava", webDriver.getCurrentUrl());
     }
 
     @Test
-    public void testValidVerifiedUserLogin() throws InterruptedException {
-        login("emirprasovic", "dobrasifra");
+    public void testValidVerifiedUserLogin() {
+        login("verifiedUser", "dobrasifra");
+
+        assertNotEquals("https://oruzje.net/prijava", webDriver.getCurrentUrl());
     }
 
     @Test
-    public void testInvalidLogin() throws InterruptedException {
+    public void testInvalidLogin() {
         login("InvalidUsername", "invalidpwd");
 
         assertEquals("https://oruzje.net/prijava", webDriver.getCurrentUrl());
@@ -261,7 +267,7 @@ public class OruzjeNetTest {
 
         assertTrue(productTitle.toLowerCase().contains(expectedPartialResult), "Search results should contain the search term");
 
-        Thread.sleep(3000);
+        Thread.sleep(1000);
     }
 
     @ParameterizedTest
@@ -559,9 +565,6 @@ public class OruzjeNetTest {
         WebElement firstProduct = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div[2]/div/div/div/div[2]/article[1]/a")));
         firstProduct.click();
 
-        WebElement productTitleElement = webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("/html/body/div/div/div/div/div[1]/div[2]/div[3]/div[1]/h1")));
-        String productTitle = productTitleElement.getText();
-
         WebElement saveButton = webDriverWait.until(ExpectedConditions.elementToBeClickable(By.xpath("/html/body/div/div/div/div/div[1]/div[1]/a")));
         saveButton.click();
 
@@ -613,7 +616,6 @@ public class OruzjeNetTest {
         Select categorySelect = new Select(webDriver.findElement(By.name("category_id")));
         Select subcategorySelect = new Select(webDriver.findElement(By.name("subcategory_id")));
         WebElement priceInput = webDriver.findElement(By.name("price"));
-        // WebElement stateInput = webDriver.findElement(By.name("state"));
         WebElement stateInputLabel = webDriver.findElement(By.xpath("//label[@for='radio-1']"));
 
         scrollToY(600);
@@ -624,7 +626,6 @@ public class OruzjeNetTest {
         webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(1));
         subcategorySelect.selectByValue("85");
         priceInput.sendKeys("100");
-        // stateInput.click();
         stateInputLabel.click();
 
         scrollToY(800);
@@ -883,7 +884,7 @@ public class OruzjeNetTest {
         testValidUnverifiedUserLogin();
 
         // This is the product that we added with the above test
-        webDriver.get("https://oruzje.net/oglas/test-product-6");
+        webDriver.get("https://oruzje.net/oglas/test-product-9");
 
         scrollToY(600);
         Thread.sleep(1000);
@@ -905,7 +906,7 @@ public class OruzjeNetTest {
         testValidUnverifiedUserLogin();
 
         // This is the product that we added with the above test
-        webDriver.get("https://oruzje.net/oglas/test-product-6");
+        webDriver.get("https://oruzje.net/oglas/test-product-9");
 
         scrollToY(600);
         Thread.sleep(1000);
@@ -930,7 +931,7 @@ public class OruzjeNetTest {
     public void testPostQuestion() throws InterruptedException {
         testValidUnverifiedUserLogin();
 
-        webDriver.get("https://oruzje.net/oglas/test-product-6");
+        webDriver.get("https://oruzje.net/oglas/test-product-9");
 
         scrollToY(1800);
         Thread.sleep(1000);
@@ -948,7 +949,7 @@ public class OruzjeNetTest {
 
     @Test
     public void testPostQuestionAsGuest() throws InterruptedException {
-        webDriver.get("https://oruzje.net/oglas/test-product-6");
+        webDriver.get("https://oruzje.net/oglas/test-product-9");
 
         scrollToY(1800);
         Thread.sleep(1000);
@@ -965,7 +966,7 @@ public class OruzjeNetTest {
     public void testPostEmptyQuestion() throws InterruptedException {
         testValidUnverifiedUserLogin();
 
-        webDriver.get("https://oruzje.net/oglas/test-product-6");
+        webDriver.get("https://oruzje.net/oglas/test-product-9");
 
         scrollToY(1800);
         Thread.sleep(1000);
@@ -1170,6 +1171,4 @@ public class OruzjeNetTest {
         String currentUrl = webDriver.getCurrentUrl();
         assertEquals("https://oruzje.net/prijava", currentUrl, "Guest should be redirected to the login page");
     }
-
-    // TEST SCENARIO: PRODUCT DETAILS
 }
